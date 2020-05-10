@@ -23,11 +23,12 @@ namespace Application.Activities
             }
             public async Task<Unit> Handle(Command request, CancellationToken cancellationToken)
             {
-                var activity = _context.Activities.FindAsync(request.Id);
-
-                if (activity == null)
+                var activity = await _context.Activities.FindAsync(request.Id);
+                
+                if (activity == null){
                     throw new Exception("Could not find activity");
-
+                }
+                
                 _context.Remove(activity);
                 
                 var success = await _context.SaveChangesAsync() > 0;
@@ -35,7 +36,7 @@ namespace Application.Activities
                 if (success) return Unit.Value;
 
                 throw new Exception("Problem saving changes");
-            }
+             }
         }
     }
 }
