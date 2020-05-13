@@ -3,14 +3,12 @@ import { createContext, SyntheticEvent } from "react";
 import { IActivity } from "../models/activity";
 import agent from "../../api/agent";
 
-configure({enforceActions: "always"});
+configure({ enforceActions: "always" });
 
 class ActivityStore {
 	@observable activitiesRegistry = new Map();
-	@observable activities: IActivity[] = [];
 	@observable loadingInitial = false;
-	@observable selectedActivity: IActivity | undefined;
-	@observable editMode = false;
+	@observable activity: IActivity | null = null;
 	@observable submitting = false;
 	@observable target = "";
 
@@ -24,14 +22,13 @@ class ActivityStore {
 		this.loadingInitial = true;
 		try {
 			const activities = await agent.Activities.list();
-			runInAction("loading activities",()=>{
+			runInAction("loading activities", () => {
 				activities.forEach((activity) => {
 					activity.date = activity.date.split(".")[0];
 					this.activitiesRegistry.set(activity.id, activity);
 					this.loadingInitial = false;
 				});
-			})
-			
+			});
 		} catch (error) {
 			console.log(error);
 			runInAction("load activities error", () => {
@@ -53,29 +50,18 @@ class ActivityStore {
 		// 	});
 	};
 
-	@action selectActivity = (id: string) => {
-		this.selectedActivity = this.activitiesRegistry.get(id);
-		this.editMode = false;
-	};
-
-	@action openCreateForm = () => {
-		this.selectedActivity = undefined;
-		this.editMode = true;
-	};
-
 	@action createActivity = async (activity: IActivity) => {
 		this.submitting = true;
 		try {
 			await agent.Activities.create(activity);
 			runInAction("creating activity", () => {
 				this.activitiesRegistry.set(activity.id, activity);
-				this.selectedActivity = activity;
+				this.activity = activity;
 			});
 		} catch (error) {
 			console.log(error);
 		} finally {
 			runInAction("create activity final", () => {
-				this.editMode = false;
 				this.submitting = false;
 			});
 		}
@@ -87,17 +73,15 @@ class ActivityStore {
 			await agent.Activities.update(activity);
 			// state modifying code (observable) should be wrapped as action. runInAction is a sugar for action wrap:
 			runInAction("editing activity", () => {
-			this.activitiesRegistry.set(activity.id, activity);
-			this.selectedActivity = activity;
-			this.editMode = false;
+				this.activitiesRegistry.set(activity.id, activity);
+				this.activity = activity;
 			});
 		} catch (error) {
 			console.log(error);
 		} finally {
 			runInAction("edit activity final", () => {
-				this.editMode = false;
 				this.submitting = false;
-		  });
+			});
 		}
 	};
 
@@ -116,19 +100,45 @@ class ActivityStore {
 			console.log(error);
 		} finally {
 			runInAction("delete activity final", () => {
-				if(this.selectedActivity?.id === id){
-					this.selectedActivity = undefined;
+				if (this.activity?.id === id) {
+					this.activity = null;
 				}
 				this.submitting = false;
 				this.target = "";
-			})
+			});
 		}
 	};
 
-	@action setEditMode = (flag: boolean) => (this.editMode = flag);
+	getActivity = (id: string) => {
+		return this.activitiesRegistry.get(id);
+	};
 
-	@action setSelectedActivity = (activity: IActivity | undefined) =>
-		(this.selectedActivity = activity);
+	@action loadActivity = async (id: string) => {
+		let activity = this.getActivity(id);
+		if (activity) {
+			this.activity = activity;
+		} else {
+			try {
+				this.loadingInitial = true;
+				activity = await agent.Activities.details(id);
+			} catch (error) {
+				console.log(error);
+			} finally {
+				runInAction("loading activity final", () => {
+					this.loadingInitial = false;
+					this.activity = activity;
+				});
+			}
+		}
+	};
+
+	@action selectActivity = (id: string) => {
+		this.activity = this.activitiesRegistry.get(id);
+	};
+
+	@action clearActivity = () => {
+		this.activity = null;
+	}
 }
 
 export default createContext(new ActivityStore());

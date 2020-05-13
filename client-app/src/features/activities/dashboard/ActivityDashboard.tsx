@@ -1,30 +1,30 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { Grid } from "semantic-ui-react";
 import ActivityList from "./ActivityList";
-import ActivityDetails from "../details/ActivityDetails";
-import  ActivityForm  from "../form/ActivityForm";
 import { observer } from "mobx-react-lite";
+import { LoadingComponent } from "../../../app/layout/LoadingComponent";
 import ActivityStore from "../../../app/store/activityStore";
 
 const ActivityDashboard: React.FC = () => {
-  const activityStore = useContext(ActivityStore);
-  const { selectedActivity, editMode } = activityStore;
+	const activityStore = useContext(ActivityStore);
+
+	//everytime component renders useEffect will be called
+	useEffect(() => {
+		activityStore.loadActivities();
+		// need to pass second parameter as an empty array to prevent useEffect from running continuosly
+	}, [activityStore]);
+
+	if (activityStore.loadingInitial) {
+		return <LoadingComponent content={"Loading activities..."} />;
+	}
+
 	return (
 		<Grid>
 			<Grid.Column width={10}>
 				<ActivityList />
 			</Grid.Column>
 			<Grid.Column width={6}>
-				{/* what is to the right of the double ampersand (&&) is only excecuted when the left is equal to null */}
-				{selectedActivity && !editMode && (
-					<ActivityDetails />
-				)}
-				{editMode && (
-					<ActivityForm
-						key={selectedActivity?.id || 0}
-						activity={selectedActivity!}
-					/>
-				)}
+				<h2>Activity filters</h2>
 			</Grid.Column>
 		</Grid>
 	);
