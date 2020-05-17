@@ -4,10 +4,11 @@ using System.Threading.Tasks;
 using Domain;
 using MediatR;
 using Persistence;
+using FluentValidation;
 
 namespace Application.Activities
 {
-    public class Create
+  public class Create
     {
         public class Command : IRequest
         {
@@ -18,6 +19,18 @@ namespace Application.Activities
             public DateTime Date { get; set; }
             public string City { get; set; }
             public string Venue { get; set; }
+        }
+
+        public class CommandValidator : AbstractValidator<Command> 
+        {
+            public CommandValidator(){
+                RuleFor(x => x.Title).NotNull();
+                RuleFor(x => x.Description).NotNull();
+                RuleFor(x => x.Category).NotNull();
+                RuleFor(x => x.Date).NotNull();
+                RuleFor(x => x.City).NotNull();
+                RuleFor(x => x.Venue).NotNull();
+            }
         }
 
         public class Handler : IRequestHandler<Command>

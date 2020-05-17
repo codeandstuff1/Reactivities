@@ -45,10 +45,10 @@ class ActivityStore {
 				});
 			});
 		} catch (error) {
-			console.log(error);
 			runInAction("load activities error", () => {
 				this.loadingInitial = false;
 			});
+			console.log(error);
 		}
 
 		//*****above aproach use async method and it's just a syntactic sugar for promise****
@@ -138,7 +138,8 @@ class ActivityStore {
 				activity = await agent.Activities.details(id);
 			} catch (error) {
 				console.log(error);
-			} finally {
+			} 
+			finally {
 				runInAction("loading activity final", () => {
 					this.loadingInitial = false;
 					this.activity = activity;
